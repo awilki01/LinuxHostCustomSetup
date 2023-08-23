@@ -1,0 +1,60 @@
+---
+
+# derived from https://www.digitalocean.com/community/tutorials/how-to-use-ansible-to-install-and-set-up-docker-on-ubuntu-20-04
+
+- hosts: all
+  become: true
+  vars:
+    user_account: adam
+  tasks:
+
+    - name: Update and upgrade apt packages
+      become: true
+      apt:
+        upgrade: yes
+        update_cache: yes
+
+    - name: Install required system packages
+      become: true
+      apt:
+        pkg:
+          - zsh
+
+    - name: Install kitty
+      become: false
+      ansible.builtin.shell:
+        cmd: curl -L https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin
+
+    - name: Ensure Jenkins Agent directory on host
+      file:
+        state: directory
+        owner: "{{ user_account }}"
+        group: "{{ user_account }}"
+        path: ~/.local/bin/
+      become: no
+
+    - name: Add new path to PATH variable
+      ansible.builtin.shell:
+       cmd: export PATH="~/.local/bin:$PATH"
+      become: false
+
+    - name: Add kitty to path
+      become: false
+      ansible.builtin.shell:
+        cmd: ln -sf ~/.local/kitty.app/bin/kitty ~/.local/kitty.app/bin/kitten ~/.local/bin/
+
+    - name: Install Oh-My-ZSH
+      become: false
+      ansible.builtin.shell:
+        cmd: curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh
+
+    - name: Make ZSH the default shell for user
+      become: true
+      user:
+        name: "{{ user_account }}"
+        shell: /bin/zsh
+
+    # Oh my ZSH themes can be set in ~/.zshrc file
+    # Kitty themes are accessed by doing following command from within kitty:
+    #   kitty +kitten themes
+
